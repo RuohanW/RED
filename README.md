@@ -1,6 +1,8 @@
+# RED: Random Expert Distillation
+
 This is the implementation for the paper **Random Expert Distillation: Imitation Learning via Expert Policy Support Estimation** from ICML 2019.
 
-The implementation is based on OpenAI's [baselines](https://github.com/openai/baselines). Please refers to the baselines repo for installation prerequisites and instructions.
+The implementation is based on OpenAI's [baselines](https://github.com/openai/baselines). Please refer to the baselines repo for installation prerequisites and instructions.
 
 ## Models
 We provide implementation of three models, RND, AE and GMMIL in the rnd_gail/ folder. They correspond with reward type 0, 1 and 2.
