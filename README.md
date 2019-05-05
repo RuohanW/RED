@@ -30,7 +30,7 @@ python rnd_gail/run_expert.py --env_id=<environment_id> --pi=<model_filename>
 ## Reference
 To cite this work please refer to:
 
-    @inproceedings{rnd_imitation,
+    @inproceedings{wang2019random,
       author = {Wang, Ruohan and Ciliberto, Carlo and Amadori, Pierlugi and Demiris, Yiannis},
       title = {Random Expert Distillation: Imitation Learning via Expert Policy Support Estimation},
       year = {2019},
