@@ -15,7 +15,7 @@ To train a model:
 ```bash
 $ python rnd_gail/mujoco_main.py --env_id=<environment_id> --reward=<reward_model> [additional arguments]
 ```
-We have provided a working configuration of hyper parameters in rnd_gail/mujoco_main for Mujoco tasks. To override them from the command line, please disable the defaults in the script first.
+We have provided a working configuration of hyper parameters in `rnd_gail/mujoco_main` for Mujoco tasks. To override them from the command line, please disable the defaults in the script first.
 
 ### Example: RND with MuJoCo Hopper
 For instance, to train MuJoCo Hopper using RED for 2M timesteps
@@ -24,7 +24,7 @@ $ python rnd_gail/mujoco_main.py --env_id=Hopper-v2 --reward=0 --num_timesteps=2
 ```
 
 ## Saving and loading models
-Models are saved at <user_home>/workspace/checkpoint/mujoco/.
+Models are saved at `<user_home>/workspace/checkpoint/mujoco/`.
 To run a saved model:
 ```bash
 $ python rnd_gail/run_expert.py --env_id=<environment_id> --pi=<model_filename>
