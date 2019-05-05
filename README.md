@@ -5,7 +5,10 @@ This is the implementation for the paper **Random Expert Distillation: Imitation
 RED utilizes Trust Region Policy Policy Optimization (TRPO) from OpenAI's [baselines](https://github.com/openai/baselines). Please refer to the baselines repo for installation prerequisites and instructions.
 
 ## Models
-We provide implementation of three models, RND, AE and GMMIL in the rnd_gail/ folder. They correspond with reward type 0, 1 and 2.
+We provide implementation of three models in rnd_gail/ folder. They correspond to command line argument "--reward=" 0, 1 and 2.
+1. Random Expert Distillation (RED): reward function from expert support estimation with random prediction problems.
+2. AutoEncoder (AE): reward function from autoencoder prediction.
+3. Generative Moment Matching Imitation Learning (GMMIL): benchmark method from [this](https://aaai.org/ocs/index.php/AAAI/AAAI18/paper/viewFile/16807/16720).
 
 ## Training
 To train a model:
