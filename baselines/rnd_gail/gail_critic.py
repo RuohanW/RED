@@ -19,13 +19,14 @@ def logit_bernoulli_entropy(logits):
     return ent
 
 class TransitionClassifier(object):
-    def __init__(self, ob_size, ac_size, hidden_size=100, log_reward=False, entcoeff=0.001, scope="adversary"):
+    def __init__(self, ob_size, ac_size, hidden_size=100, log_reward=False, entcoeff=0.001, scope="adversary", dyn_norm=True):
         self.scope = scope
         self.ob_size = ob_size
         self.ac_size = ac_size
         # self.input_size = ob_size + ac_size
         self.hidden_size = hidden_size
         self.log_reward = log_reward
+        self.dyn_norm = dyn_norm
         self.build_ph()
         # Build grpah
         generator_logits = self.build_graph(self.generator_obs_ph, self.generator_acs_ph)
@@ -34,11 +35,10 @@ class TransitionClassifier(object):
         generator_acc = tf.reduce_mean(tf.cast(tf.nn.sigmoid(generator_logits) < 0.5, tf.float32))
         expert_acc = tf.reduce_mean(tf.cast(tf.nn.sigmoid(expert_logits) > 0.5, tf.float32))
 
-        weights = tf.placeholder(tf.float32, [None])
         # Build regression loss
         # let x = logits, z = targets.
         # z * -log(sigmoid(x)) + (1 - z) * -log(1 - sigmoid(x))
-        generator_loss = weights * tf.nn.sigmoid_cross_entropy_with_logits(logits=generator_logits, labels=tf.zeros_like(generator_logits))
+        generator_loss = tf.nn.sigmoid_cross_entropy_with_logits(logits=generator_logits, labels=tf.zeros_like(generator_logits))
         generator_loss = tf.reduce_mean(generator_loss)
         expert_loss = tf.nn.sigmoid_cross_entropy_with_logits(logits=expert_logits, labels=tf.ones_like(expert_logits))
         expert_loss = tf.reduce_mean(expert_loss)
@@ -62,7 +62,7 @@ class TransitionClassifier(object):
         lr = tf.placeholder(tf.float32, None)
         self.trainer = tf.train.AdamOptimizer(learning_rate=lr)
         gvs = self.trainer.compute_gradients(self.total_loss, self.get_trainable_variables())
-        self._train = U.function([self.generator_obs_ph, self.generator_acs_ph, weights, self.expert_obs_ph,
+        self._train = U.function([self.generator_obs_ph, self.generator_acs_ph, self.expert_obs_ph,
                                   self.expert_acs_ph, lr], self.losses, updates=[self.trainer.apply_gradients(gvs)])
 
     def build_ph(self):
@@ -97,15 +97,13 @@ class TransitionClassifier(object):
     def set_expert_data(self, data):
         self.data = Dataset(data, deterministic=False)
 
-    def train(self, rl_ob, rl_ac, steps=1, lr=3e-4, weights=None):
+    def train(self, rl_ob, rl_ac, steps=1, lr=3e-4):
         n = rl_ob.shape[0]
         loss_buf = []
-        if weights is None:
-            weights = np.ones([n], dtype=np.float32)
         batch_size = rl_ob.shape[0]// steps
-        for batch in iterbatches([rl_ob, rl_ac, weights], include_final_partial_batch=False, batch_size=batch_size):
+        for batch in iterbatches([rl_ob, rl_ac], include_final_partial_batch=False, batch_size=batch_size):
             exp_ob, exp_ac = self.data.next_batch(batch_size)
-            if self.obs_rms:
+            if self.obs_rms and self.dyn_norm:
                 self.obs_rms.update(np.concatenate([exp_ob, rl_ob], axis=0))
             loss_buf.append(self._train(*batch, exp_ob, exp_ac, lr))
         logger.info(fmt_row(13, self.loss_name))

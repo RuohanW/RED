@@ -104,7 +104,7 @@ def add_vtarg_and_adv(seg, gamma, lam):
 
 def learn(env, policy_func, reward_giver, expert_dataset, rank,
           pretrained, pretrained_weight, *,
-          g_step, d_step, entcoeff, save_per_iter,
+          g_step, d_step, entcoeff,
           ckpt_dir, timesteps_per_batch, task_name,
           gamma, lam,
           max_kl, cg_iters, cg_damping=1e-2,
@@ -122,7 +122,6 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
     pi = policy_func("pi", ob_space, ac_space)
     oldpi = policy_func("oldpi", ob_space, ac_space)
     atarg = tf.placeholder(dtype=tf.float32, shape=[None])  # Target advantage function (if applicable)
-    ret = tf.placeholder(dtype=tf.float32, shape=[None])  # Empirical return
 
     ob = U.get_placeholder_cached(name="ob")
     ac = pi.pdtype.sample_placeholder([None])
@@ -132,8 +131,6 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
     meankl = tf.reduce_mean(kloldnew)
     meanent = tf.reduce_mean(ent)
     entbonus = entcoeff * meanent
-
-    vferr = tf.reduce_mean(tf.square(pi.vpred - ret))
 
     ratio = tf.exp(pi.pd.logp(ac) - oldpi.pd.logp(ac))  # advantage * pnew / pold
     surrgain = tf.reduce_mean(ratio * atarg)
@@ -168,7 +165,8 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
     compute_losses = U.function([ob, ac, atarg], losses)
     compute_lossandgrad = U.function([ob, ac, atarg], losses + [U.flatgrad(optimgain, var_list)])
     compute_fvp = U.function([flat_tangent, ob, ac, atarg], fvp)
-    compute_vflossandgrad = U.function([ob, ret], U.flatgrad(vferr, vf_var_list))
+    compute_vflossandgrad = pi.vlossandgrad
+
 
     def allmean(x):
         assert isinstance(x, np.ndarray)
@@ -199,8 +197,6 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
 
     assert sum([max_iters > 0, max_timesteps > 0, max_episodes > 0]) == 1
 
-    # g_loss_stats = stats(loss_names)
-    # d_loss_stats = stats(reward_giver.loss_name)
     ep_stats = stats(["True_rewards", "Rewards", "Episode_length"])
     # if provide pretrained weight
     if pretrained_weight is not None:
@@ -208,18 +204,13 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
     else:
         if not dyn_norm:
             pi.ob_rms.update(expert_dataset[0])
-    
-    
-    # reward_giver.gail.obs_rms.update(expert_dataset[0])
 
 
-    # cheetah requires 300 iter
-    # walker2d 200 iter
-    #reacher 400 iter?
     if not mmd:
         reward_giver.train(*expert_dataset, iter=rnd_iter)
-        for batch in iterbatches(expert_dataset, batch_size=32):
-            print(reward_giver.get_reward(*batch))
+        #inspect the reward learned
+        # for batch in iterbatches(expert_dataset, batch_size=32):
+        #     print(reward_giver.get_reward(*batch))
 
     best = -2000
     save_ind = 0
@@ -271,7 +262,7 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
             logger.record_tabular("Best so far", best)
 
             # Save model
-            if ckpt_dir is not None and true_rew_avg >= best and len(true_rewbuffer) > 30:
+            if ckpt_dir is not None and true_rew_avg >= best:
                 best = true_rew_avg
                 fname = os.path.join(ckpt_dir, task_name)
                 os.makedirs(os.path.dirname(fname), exist_ok=True)
@@ -281,7 +272,6 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
 
             #compute gradient towards next policy
             add_vtarg_and_adv(seg, gamma, lam)
-            # ob, ac, atarg, ret, td1ret = map(np.concatenate, (obs, acs, atargs, rets, td1rets))
             ob, ac, atarg, tdlamret = seg["ob"], seg["ac"], seg["adv"], seg["tdlamret"]
             vpredbefore = seg["vpred"]  # predicted value function before udpate
             atarg = (atarg - atarg.mean()) / atarg.std()  # standardized advantage function estimate
@@ -336,8 +326,7 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
                                                          include_final_partial_batch=False, batch_size=128):
                     if hasattr(pi, "ob_rms") and dyn_norm:
                         pi.ob_rms.update(mbob)  # update running mean/std for policy
-                    g = allmean(compute_vflossandgrad(mbob, mbret))
-                    vfadam.update(g, vf_stepsize)
+                    vfadam.update(allmean(compute_vflossandgrad(mbob, mbret)), vf_stepsize)
 
         g_losses = meanlosses
         for (lossname, lossval) in zip(loss_names, meanlosses):

@@ -71,12 +71,8 @@ class MlpPolicy(object):
             self.init_popart()
 
         ret = tf.placeholder(tf.float32, [None])
-        weight = tf.placeholder(tf.float32, [None])
-        if popart:
-            vferr = tf.reduce_mean(tf.square(self.norm_vpred - normalize(ret, self.v_rms)) * weight)
-        else:
-            vferr = tf.reduce_mean(tf.square(self.vpred - ret) * weight)
-        self.vlossandgrad = U.function([ob, ret, weight], [vferr, U.flatgrad(vferr, self.get_vf_variable())])
+        vferr = tf.reduce_mean(tf.square(self.vpred - ret))
+        self.vlossandgrad = U.function([ob, ret], U.flatgrad(vferr, self.get_vf_variable()))
 
     def init_popart(self):
         old_std = tf.placeholder(tf.float32, shape=[1], name='old_std')
