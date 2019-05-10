@@ -1,6 +1,7 @@
 # RED: Random Expert Distillation
 
 This is the implementation for the paper **Random Expert Distillation: Imitation Learning via Expert Policy Support Estimation** from ICML 2019.
+This repo is part of the software offered by [Personal Robotics Lab@Imperial](https://github.com/orgs/ImperialCollegeLondon/teams/personal-robotics-lab/repositories).
 
 RED leverages the Trust Region Policy Policy Optimization (TRPO) implementation from OpenAI's [baselines](https://github.com/openai/baselines). Please refer to the baselines repo for installation prerequisites and instructions.
 
