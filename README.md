@@ -6,7 +6,7 @@ This repo is part of the software offered by [Personal Robotics Lab@Imperial](ht
 RED leverages the Trust Region Policy Policy Optimization (TRPO) implementation from OpenAI's [baselines](https://github.com/openai/baselines). Please refer to the baselines repo for installation prerequisites and instructions.
 
 ## Models
-We provide implementation of three models in `rnd_gail/ folder`. They correspond to command line argument `--reward=` 0, 1 and 2.
+We provide implementation of three models in `rnd_gail/folder`. They correspond to command line argument `--reward=` 0, 1 and 2.
 1. **Random Expert Distillation (RED)**: reward function from expert support estimation with random prediction problems.
 2. **AutoEncoder (AE)**: reward function from expert support estimation with autoencoder prediction.
 3. **Generative Moment Matching Imitation Learning (GMMIL)**: benchmark method from [this work](https://aaai.org/ocs/index.php/AAAI/AAAI18/paper/viewFile/16807/16720).
